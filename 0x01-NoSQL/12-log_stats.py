@@ -1,22 +1,40 @@
 #!/usr/bin/env python3
-""" Provides stats about Nginx logs restored in mongoDB"""
-import pymongo as pm
-db = pm.MongoClient()
-mydb = db["logs"]
-mycol = mydb["nginx"]
+"""Write a Python script that provides some stats about Nginx
+logs stored in MongoDB:
+
+Database: logs
+Collection: nginx
+Display (same as the example):
+first line: x logs where x is the number of documents in this collection
+second line: Methods:
+5 lines with the number of documents with the method =
+["GET", "POST", "PUT", "PATCH", "DELETE"] in this order
+(see example below - warning: it’s a tabulation before each line)
+one line with the number of documents with:
+method=GET
+path=/status
+You can use this dump as data sample: dump.zip
+"""
+
+
+import pymongo
+from pymongo import MongoClient
+
+
+def log_nginx_stats(mongo_collection):
+    """provides some stats about Nginx logs"""
+    print(f"{mongo_collection.estimated_document_count()} logs")
+
+    print("Methods:")
+    for method in ["GET", "POST", "PUT", "PATCH", "DELETE"]:
+        count = mongo_collection.count_documents({"method": method})
+        print(f"\tmethod {method}: {count}")
+
+    number_of_gets = mongo_collection.count_documents(
+        {"method": "GET", "path": "/status"})
+    print(f"{number_of_gets} status check")
 
 
 if __name__ == "__main__":
-    get_get = mycol.count_documents({"method": "GET"})
-    get_post = mycol.count_documents({"method": "POST"})
-    get_put = mycol.count_documents({"method": "PUT"})
-    get_patch = mycol.count_documents({"method": "PATCH"})
-    get_delete = mycol.count_documents({"method": "DELETE"})
-    get_total = mycol.count_documents({})
-    get_status = mycol.count_documents({"method": "GET", "path": "/status"})
-
-
-    print("{} logs".format(get_total))
-    print("Methods:\n\tmethod GET: {}\n\tmethod POST: {}\n\tmethod PUT: {}\n\tmethod PATCH: {}\n\tmethod DELETE: {}".format(
-                  get_get, get_post, get_put, get_patch, get_delete))
-    print("{} status check".format(get_status))
+    mongo_collection = MongoClient('mongodb://127.0.0.1:27017').logs.nginx
+    log_nginx_stats(mongo_collection)
